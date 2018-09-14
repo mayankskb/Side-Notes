@@ -1,4 +1,4 @@
-# Scrutinize_Material
+# Side Notes
 Summary of Papers on Deep Learning
 - Two Novel Seq2Seq Architectures: ConvS2S [[Paper](https://arxiv.org/pdf/1705.03122.pdf)], Transfomer [[Paper](https://arxiv.org/abs/1706.03762)], [[Review](https://github.com/yufengm/Papers/blob/master/reviews/seq2seq.pdf)]
 
