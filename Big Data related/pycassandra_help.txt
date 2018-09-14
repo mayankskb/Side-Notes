@@ -1,0 +1,147 @@
+###########################################################################################################
+#
+#                                       Py - Cassandra  Learning
+#   This file is for a reference purpose for cassandra and its equivalent instruction in cqlsh
+#
+##########################################################################################################
+
+#start a cassandra server by command
+cassandra -<f>
+
+# installing cassandra for python
+pip install cassandra-driver
+
+# Importing cassendra
+from cassandra.cluster import Cluster
+
+# Instantitate a cluster object of cassandra cluster
+cluster = Cluster()
+
+# Connecting to cluster
+session = cluster.connect()
+
+# Creating a keyspaces (database)
+--->> from cqlsh
+CREATE KEYSPACE Student WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };
+
+--->> from pycassandra
+session.execute("CREATE KEYSPACE Student WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }")
+
+# Getting list of all keyspaces
+--->> from cqlsh
+SELECT * FROM system_schema.keyspaces;
+
+--->> from pycassandra
+obj = session.execute("SELECT * FROM system_schema.keyspaces")
+for o in obj:
+    print(o)
+
+# Switching to a keyspace so that all queries will go to this keyspace by default
+session.set_keyspace('student')
+
+# Creating a table inside a keyspace
+session.execute('CREATE TABLE subject_list ( id int PRIMARY KEY, sub_name text, max_marks int, pass_marks int )')
+
+# Inserting data into the keyspace.table by reading a csv file
+with open('subject_list.csv', 'r') as fp:
+     for line in fp:
+         item = line.split(',')
+         sno = item[0]
+         name = item[1]
+         max_marks = item[2]
+         pass_marks = item[3]
+         pass_marks = pass_marks[:-1]
+         print(sno, name, max_marks, pass_marks)
+         query = "INSERT INTO subject_list (id, sub_name, max_marks, pass_marks) VALUES ({0},'{1}',{2},{3})".format(sno, name, max_marks, pass_marks)
+         print(query)
+         session.execute(query)
+
+# Fetching all data inside a keyspace
+output = session.execute('SELECT * FROM subject_list')
+for row in output:
+    print(row)
+
+
+
+########################################################################
+			ASYNCHRONOUS QUERIES
+########################################################################
+
+These are the query which donot wait for the completion of the task/query. The driver support asynchronous queries through execute_async() method. Instead of waiting for the query to complete and returning rows directly, this method almost immediately returns a ResponseFuture object.
+
+There can be two methods of dealing with asynchronous queries :
+		1. result() method
+		2. callback functions
+
+The first is by calling result() on it. If the query has not yet completed, this will block until it has and then return the result or raise an Exception if an error occurred. 
+
+
+# Making an asynchronous query using result() methods
+
+sub_id = [12, 1, 2, 10, 7, 8]
+futures = []
+query = 'SELECT * FROM subject_list WHERE id=%s'
+
+for iid in sub_id:
+    futures.append(session.execute_async(query, [iid]))
+
+print('Fed the async query, the output is not printed.')
+print('Calling the ResponseFuture object of async query')
+
+try:
+    for future in futures:
+        rows = future.result()
+	subject = rows[0]
+	print('Subject Name : ', subject.sub_name, 'Subject Passing Marks : ', subject.pass_marks)
+except ReadTimeout:
+    log.exception('Query Read timed out:')
+
+
+Alternatively, instead of calling result(), you can attach callback and errback functions through the add_callback(), add_errback(), and add_callbacks(), methods. If you have used Twisted Python before, this is designed to be a lightweight version of that.
+
+There are a few important things to remember when working with callbacks:
+1. Exceptions that are raised inside the callback functions will be logged and then ignored.
+2. Your callback will be run on the event loop thread, so any long-running operations will prevent other requests from being handled
+
+# Making an asynchronous query using callback method
+
+
+def handle_success(rows, label):
+	subject = rows[0]
+	try:
+		print(label,' : ',' Subject Name : ',subject.sub_name, ' Passing Marks : ', subject.pass_marks, ' Max Marks : ', subject.max_marks)
+	except Exception:
+		log.error('Failed to process subject %s', subject.id)
+
+def handle_error(exception):
+	log.error('Failed to fetch subject info: %s', exception)
+
+sid = int(input('Enter the subject id : '))
+
+futures = session.execute_async(query, [sid])
+futures.add_callback(handle_success, 'Async Call')
+futures.add_errback(handle_error)
+
+print('Fed the async query, the output is not printed.')
+print('Calling the ResponseFuture object of async query')
+
+query_result = futures.result()
+
+
+#########################################################################################################
+					 Prepared Statements
+#########################################################################################################
+					
+Prepared statements are queries that are parsed by Cassandra and then saved for later use. When the driver uses a prepared statement, it only needs to send the values of parameters to bind. This lowers network traffic and CPU utilization within Cassandra because Cassandra does not have to re-parse the query each time.
+
+To prepare a query, use Session.prepare():
+
+user_lookup_stmt = session.prepare("SELECT * FROM users WHERE user_id=?")
+
+users = []
+for user_id in user_ids_to_query:
+    user = session.execute(user_lookup_stmt, [user_id])
+    users.append(user)
+prepare() returns a PreparedStatement instance which can be used in place of SimpleStatement instances or literal string queries. It is automatically prepared against all nodes, and the driver handles re-preparing against new nodes and restarted nodes when necessary.
+
+Note that the placeholders for prepared statements are ? characters. This is different than for simple, non-prepared statements (although future versions of the driver may use the same placeholders for both).

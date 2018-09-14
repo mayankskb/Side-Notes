@@ -1,0 +1,36 @@
+# creating a git repository using git shell and uploading file on that
+
+
+
+git init
+git add .
+git commit -m "First commit"
+
+
+#In Terminal, add the URL for the remote repository where your local repository will be pushed.
+
+git remote add origin remote repository URL
+
+# Sets the new remote
+git remote -v
+
+git push origin master
+
+
+
+
+##############################
+FOR PUSHING LARGE FILE ON GIT
+##############################
+
+
+git lfs track "*.psd"
+Adding path *.psd
+
+
+Add a file to the repository matching the extension you've associated:
+git add path/to/file.psd
+
+Commit the file and push it to GitHub:
+git commit -m "add file.psd"
+git push origin master

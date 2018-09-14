@@ -1,0 +1,19 @@
+1.Supervised Anomaly Detection.
+A group of patterns are labelled as anomalies and we need to
+find them. This is just a classification problem where one of
+the classes is named ”anomaly”.
+
+2. Static Unsupervised Anomaly Detection.
+There are a number of labelled pattern classes and suddenly
+a weird unrecognized outlier pattern shape shows up. Like an
+unknown heartbeat during an ECG. Either benign or
+worrisome, an alarm must be triggered.
+
+3. Dynamic Unsupervised Anomaly Detection.Ana
+Here some measures change over time till their values are not
+normal anymore. For example, while a motor is slowly
+deteriorating, one of the measurements might change till it gets
+out of control and the motor breaks. We want to stop the motor
+before it completely breaks producing even more damages.
+This problem is similar to number 2 but slightly more challenging
+because it is not pattern based and it changes slowly over time.
